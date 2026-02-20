@@ -12,10 +12,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running
 
-Launch Claude Code in a sandboxed environment:
 ```bash
+# Project mode - work on a specific project
 ./bclaude /path/to/project
+
+# Administration mode - manage Claude configuration
+./bclaude
 ```
+
+## Usage Modes
+
+**Project mode** (with path argument):
+- Write access to project directory + Claude config files
+- Standard workflow for working on code
+
+**Administration mode** (no arguments):
+- Write access only to `~/.claude` and `~/.claude.json`
+- For installing skills, MCPs, editing user CLAUDE.md, etc.
 
 ## Sandbox Configuration
 

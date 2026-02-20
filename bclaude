@@ -1,43 +1,54 @@
 #! /bin/bash
 
 # Check argument count
-if [[ $# -ne 1 ]]; then
-    echo "Error: Expected exactly one argument (project path)" >&2
-    echo "Usage: $(basename "$0") <project-path>" >&2
+if [[ $# -gt 1 ]]; then
+    echo "Error: Expected zero or one argument (project path)" >&2
+    echo "Usage: $(basename "$0") [project-path]" >&2
     exit 1
 fi
 
-# Check if path exists and is a directory
-if [[ ! -d "$1" ]]; then
-    echo "Error: '$1' is not a valid directory" >&2
-    exit 1
+# Common bwrap options for system binaries and config
+BWRAP_COMMON=(
+    --ro-bind /usr /usr
+    --ro-bind /lib /lib
+    --ro-bind /lib64 /lib64
+    --ro-bind /bin /bin
+    --ro-bind /etc/resolv.conf /etc/resolv.conf
+    --ro-bind /etc/hosts /etc/hosts
+    --ro-bind /etc/ssl /etc/ssl
+    --ro-bind /etc/ca-certificates /etc/ca-certificates
+    --ro-bind /etc/passwd /etc/passwd
+    --ro-bind /etc/group /etc/group
+    --ro-bind "$HOME/.gitconfig" "$HOME/.gitconfig"
+    --bind "$HOME/.claude" "$HOME/.claude"
+    --bind "$HOME/.claude.json" "$HOME/.claude.json"
+    --tmpfs /tmp
+    --proc /proc
+    --dev /dev
+    --share-net
+    --unshare-pid
+    --die-with-parent
+    --ro-bind /opt/claude-code/bin/claude /opt/claude-code/bin/claude
+)
+
+# Start claude in a sandbox with read-only access to system binaries and write-access to the project directory (if provided) and claude setting files ($HOME/.claude directory and $HOME/.claude.json file)
+if [[ $# -eq 1 ]]; then
+    # Check if path exists and is a directory
+    if [[ ! -d "$1" ]]; then
+        echo "Error: '$1' is not a valid directory" >&2
+        exit 1
+    fi
+
+    # Expand to absolute path
+    PROJECT_DIR="$(realpath "$1")"
+
+    bwrap "${BWRAP_COMMON[@]}" \
+        --bind "$PROJECT_DIR" "$PROJECT_DIR" \
+        --chdir "$PROJECT_DIR" \
+        "$(command -v claude)" --dangerously-skip-permissions
+else
+    # No project directory - start in $HOME with only claude config write access
+    bwrap "${BWRAP_COMMON[@]}" \
+        --chdir "$HOME" \
+        "$(command -v claude)" --dangerously-skip-permissions
 fi
-
-# Expand to absolute path
-PROJECT_DIR="$(realpath "$1")"
-
-# Start claude in a sandbox with read-only access to system binaries and write-access to the project directory and claude setting files ($HOME/.claude directory and $HOME/.claude.json file)
-bwrap \
-     --ro-bind /usr /usr \
-     --ro-bind /lib /lib \
-     --ro-bind /lib64 /lib64 \
-     --ro-bind /bin /bin \
-     --ro-bind /etc/resolv.conf /etc/resolv.conf \
-     --ro-bind /etc/hosts /etc/hosts \
-     --ro-bind /etc/ssl /etc/ssl \
-     --ro-bind /etc/ca-certificates /etc/ca-certificates \
-     --ro-bind /etc/passwd /etc/passwd \
-     --ro-bind /etc/group /etc/group \
-     --ro-bind "$HOME/.gitconfig" "$HOME/.gitconfig" \
-     --bind "$PROJECT_DIR" "$PROJECT_DIR" \
-     --bind "$HOME/.claude" "$HOME/.claude" \
-     --bind "$HOME/.claude.json" "$HOME/.claude.json" \
-     --tmpfs /tmp \
-     --proc /proc \
-     --dev /dev \
-     --share-net \
-     --unshare-pid \
-     --die-with-parent \
-     --chdir "$PROJECT_DIR" \
-     --ro-bind /opt/claude-code/bin/claude /opt/claude-code/bin/claude \
-     "$(command -v claude)" --dangerously-skip-permissions
