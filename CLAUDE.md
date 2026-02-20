@@ -18,6 +18,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Administration mode - manage Claude configuration
 ./bclaude
+
+# Debug mode - explore sandbox environment
+./bclaude --debug [project-path]
 ```
 
 ## Usage Modes
@@ -29,6 +32,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Administration mode** (no arguments):
 - Write access only to `~/.claude` and `~/.claude.json`
 - For installing skills, MCPs, editing user CLAUDE.md, etc.
+
+**Debug mode** (`--debug` flag):
+- Launches bash shell instead of claude
+- Allows exploring what the sandbox provides
+- Useful for verifying file access before running claude
 
 ## Sandbox Configuration
 

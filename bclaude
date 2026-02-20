@@ -1,9 +1,21 @@
 #! /bin/bash
 
+# Parse --debug flag from arguments
+DEBUG_MODE=false
+ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "--debug" ]]; then
+        DEBUG_MODE=true
+    else
+        ARGS+=("$arg")
+    fi
+done
+set -- "${ARGS[@]}"
+
 # Check argument count
 if [[ $# -gt 1 ]]; then
     echo "Error: Expected zero or one argument (project path)" >&2
-    echo "Usage: $(basename "$0") [project-path]" >&2
+    echo "Usage: $(basename "$0") [--debug] [project-path]" >&2
     exit 1
 fi
 
@@ -42,13 +54,26 @@ if [[ $# -eq 1 ]]; then
     # Expand to absolute path
     PROJECT_DIR="$(realpath "$1")"
 
-    bwrap "${BWRAP_COMMON[@]}" \
-        --bind "$PROJECT_DIR" "$PROJECT_DIR" \
-        --chdir "$PROJECT_DIR" \
-        "$(command -v claude)" --dangerously-skip-permissions
+    if [[ "$DEBUG_MODE" == true ]]; then
+        bwrap "${BWRAP_COMMON[@]}" \
+            --bind "$PROJECT_DIR" "$PROJECT_DIR" \
+            --chdir "$PROJECT_DIR" \
+            bash
+    else
+        bwrap "${BWRAP_COMMON[@]}" \
+            --bind "$PROJECT_DIR" "$PROJECT_DIR" \
+            --chdir "$PROJECT_DIR" \
+            "$(command -v claude)" --dangerously-skip-permissions
+    fi
 else
     # No project directory - start in $HOME with only claude config write access
-    bwrap "${BWRAP_COMMON[@]}" \
-        --chdir "$HOME" \
-        "$(command -v claude)" --dangerously-skip-permissions
+    if [[ "$DEBUG_MODE" == true ]]; then
+        bwrap "${BWRAP_COMMON[@]}" \
+            --chdir "$HOME" \
+            bash
+    else
+        bwrap "${BWRAP_COMMON[@]}" \
+            --chdir "$HOME" \
+            "$(command -v claude)" --dangerously-skip-permissions
+    fi
 fi
