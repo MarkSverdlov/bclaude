@@ -1,11 +1,14 @@
 #! /bin/bash
 
-# Parse --debug flag from arguments
+# Parse --debug and --offline flags from arguments
 DEBUG_MODE=false
+OFFLINE_MODE=false
 ARGS=()
 for arg in "$@"; do
     if [[ "$arg" == "--debug" ]]; then
         DEBUG_MODE=true
+    elif [[ "$arg" == "--offline" ]]; then
+        OFFLINE_MODE=true
     else
         ARGS+=("$arg")
     fi
@@ -15,7 +18,7 @@ set -- "${ARGS[@]}"
 # Check argument count
 if [[ $# -gt 1 ]]; then
     echo "Error: Expected zero or one argument (project path)" >&2
-    echo "Usage: $(basename "$0") [--debug] [project-path]" >&2
+    echo "Usage: $(basename "$0") [--debug] [--offline] [project-path]" >&2
     exit 1
 fi
 
@@ -37,11 +40,17 @@ BWRAP_COMMON=(
     --tmpfs /tmp
     --proc /proc
     --dev /dev
-    --share-net
     --unshare-pid
     --die-with-parent
     --ro-bind /opt/claude-code/bin/claude /opt/claude-code/bin/claude
 )
+
+# Add network option based on offline mode
+if [[ "$OFFLINE_MODE" == true ]]; then
+    BWRAP_COMMON+=(--unshare-net)
+else
+    BWRAP_COMMON+=(--share-net)
+fi
 
 # Start claude in a sandbox with read-only access to system binaries and write-access to the project directory (if provided) and claude setting files ($HOME/.claude directory and $HOME/.claude.json file)
 if [[ $# -eq 1 ]]; then

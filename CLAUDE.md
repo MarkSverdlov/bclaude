@@ -21,6 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Debug mode - explore sandbox environment
 ./bclaude --debug [project-path]
+
+# Offline mode - disable network access
+./bclaude --offline /path/to/project
 ```
 
 ## Usage Modes
@@ -38,16 +41,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Allows exploring what the sandbox provides
 - Useful for verifying file access before running claude
 
+**Offline mode** (`--offline` flag):
+- Disables network access using `--unshare-net`
+- Can be combined with other modes (e.g., `--debug --offline`)
+
 ## Sandbox Configuration
 
 The bwrap configuration provides:
 - Read-only access: `/usr`, `/lib`, `/lib64`, `/bin`, SSL certs, passwd/group files, `.gitconfig`
 - Read-write access: Project directory, `~/.claude`, `~/.claude.json`
-- Full network access (`--share-net`)
+- Network access by default (`--share-net`), disabled with `--offline`
 - PID namespace isolation (`--unshare-pid`)
 - tmpfs at `/tmp`
 
 Known limitations:
-- `--share-net` allows unrestricted network/exfiltration
+- Network enabled by default (use `--offline` to disable)
 - No seccomp filters
 - No user namespace isolation
