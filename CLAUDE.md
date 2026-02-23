@@ -24,6 +24,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Offline mode - disable network access
 ./bclaude --offline /path/to/project
+
+# Read-only access to additional paths
+./bclaude --read /path/to/data /path/to/project
+
+# Multiple read-only paths
+./bclaude --read /data --read /models /path/to/project
 ```
 
 ## Usage Modes
@@ -44,6 +50,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Offline mode** (`--offline` flag):
 - Disables network access using `--unshare-net`
 - Can be combined with other modes (e.g., `--debug --offline`)
+
+**Read-only mounts** (`--read <path>` flag):
+- Adds additional paths as read-only mounts in the sandbox
+- Can be specified multiple times
+- Useful for accessing data or dependencies outside the project
 
 ## Sandbox Configuration
 

@@ -1,24 +1,47 @@
 #! /bin/bash
 
-# Parse --debug and --offline flags from arguments
+# Parse flags from arguments
 DEBUG_MODE=false
 OFFLINE_MODE=false
+READ_PATHS=()
+EXPECT_READ_PATH=false
 ARGS=()
 for arg in "$@"; do
-    if [[ "$arg" == "--debug" ]]; then
+    if [[ "$EXPECT_READ_PATH" == true ]]; then
+        READ_PATHS+=("$arg")
+        EXPECT_READ_PATH=false
+    elif [[ "$arg" == "--debug" ]]; then
         DEBUG_MODE=true
     elif [[ "$arg" == "--offline" ]]; then
         OFFLINE_MODE=true
+    elif [[ "$arg" == "--read" ]]; then
+        EXPECT_READ_PATH=true
     else
         ARGS+=("$arg")
     fi
 done
 set -- "${ARGS[@]}"
 
+# Check for missing --read argument
+if [[ "$EXPECT_READ_PATH" == true ]]; then
+    echo "Error: --read requires a path argument" >&2
+    exit 1
+fi
+
+# Validate and convert read paths to absolute paths
+for i in "${!READ_PATHS[@]}"; do
+    path="${READ_PATHS[$i]}"
+    if [[ ! -e "$path" ]]; then
+        echo "Error: --read path '$path' does not exist" >&2
+        exit 1
+    fi
+    READ_PATHS[$i]="$(realpath "$path")"
+done
+
 # Check argument count
 if [[ $# -gt 1 ]]; then
     echo "Error: Expected zero or one argument (project path)" >&2
-    echo "Usage: $(basename "$0") [--debug] [--offline] [project-path]" >&2
+    echo "Usage: $(basename "$0") [--debug] [--offline] [--read <path>]... [project-path]" >&2
     exit 1
 fi
 
@@ -51,6 +74,11 @@ if [[ "$OFFLINE_MODE" == true ]]; then
 else
     BWRAP_COMMON+=(--share-net)
 fi
+
+# Add read-only bind mounts
+for path in "${READ_PATHS[@]}"; do
+    BWRAP_COMMON+=(--ro-bind "$path" "$path")
+done
 
 # Start claude in a sandbox with read-only access to system binaries and write-access to the project directory (if provided) and claude setting files ($HOME/.claude directory and $HOME/.claude.json file)
 if [[ $# -eq 1 ]]; then
