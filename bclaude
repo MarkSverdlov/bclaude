@@ -68,6 +68,11 @@ BWRAP_COMMON=(
     --ro-bind /opt/claude-code/bin/claude /opt/claude-code/bin/claude
 )
 
+# Add TeX format files if present
+if [[ -d /var/lib/texmf ]]; then
+    BWRAP_COMMON+=(--ro-bind /var/lib/texmf /var/lib/texmf)
+fi
+
 # Add network option based on offline mode
 if [[ "$OFFLINE_MODE" == true ]]; then
     BWRAP_COMMON+=(--unshare-net)
